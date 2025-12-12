@@ -1,6 +1,9 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 import authRoutes from './routes/authRoutes.js';
 import studyPlanRoutes from './routes/studyPlanRoutes.js';
@@ -9,6 +12,7 @@ import { connectDB } from './config/db.js';
 connectDB();
 
 const app = express();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Middleware
 app.use(cors({"orgin": "*"}));
@@ -26,23 +30,49 @@ app.use((req, res, next) => {
 });
 
 // Root endpoint
-app.get('/', (req, res) => {
-    res.json({ message: 'Study Planner Server', status: 'running' });
-});
-
-// Favicon endpoint to suppress browser 404s
-app.get('/favicon.ico', (req, res) => {
-    res.status(204).send();
-});
-
-// Health check route
 app.get('/health', (req, res) => {
-    res.json({ message: 'Server is running' });
+    res.json({ message: 'Server is running', timestamp: Date.now() });
 });
 
-// API routes
+// Catch-all 404 handler
 app.use('/api', authRoutes);
 app.use('/api', studyPlanRoutes);
+
+// --- BEGIN: Serve frontend / health route & favicon ---
+const possibleFrontends = [
+  path.join(__dirname, 'public'),        // common Express static folder
+  path.join(__dirname, 'dist', 'public'),// Vite + server build output
+  path.join(__dirname, '..', 'Client', 'build'), // CRA build
+  path.join(__dirname, '..', 'Client', 'dist'),  // other builds
+];
+
+let served = false;
+for (const p of possibleFrontends) {
+  if (fs.existsSync(p)) {
+    app.use(express.static(p));
+    // serve index.html for SPA routes
+    app.get('/', (req, res) => res.sendFile(path.join(p, 'index.html')));
+    served = true;
+    console.log('✓ Serving static frontend from:', p);
+    break;
+  }
+}
+
+// fallback root route (health)
+if (!served) {
+  app.get('/', (req, res) => {
+    res.status(200).json({
+      status: 'ok',
+      message: 'Study Planner backend — API is running.',
+      apiBase: '/api',
+      timestamp: Date.now()
+    });
+  });
+}
+
+// handle favicon quietly
+app.get('/favicon.ico', (req, res) => res.sendStatus(204));
+// --- END: Serve frontend / health route & favicon ---
 
 // Test route to verify POST works at all
 app.post('/test', (req, res) => {
