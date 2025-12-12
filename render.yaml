@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: study-planner-backend
+    root: server
+    plan: free
+    env: node
+    buildCommand: npm install
+    startCommand: npm run dev
+    envVars:
+      - key: NODE_ENV
+        value: production
