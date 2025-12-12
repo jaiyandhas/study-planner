@@ -25,6 +25,11 @@ app.use((req, res, next) => {
     next();
 });
 
+// Root endpoint
+app.get('/', (req, res) => {
+    res.json({ message: 'Study Planner Server', status: 'running' });
+});
+
 // Health check route
 app.get('/health', (req, res) => {
     res.json({ message: 'Server is running' });
