@@ -30,6 +30,11 @@ app.get('/', (req, res) => {
     res.json({ message: 'Study Planner Server', status: 'running' });
 });
 
+// Favicon endpoint to suppress browser 404s
+app.get('/favicon.ico', (req, res) => {
+    res.status(204).send();
+});
+
 // Health check route
 app.get('/health', (req, res) => {
     res.json({ message: 'Server is running' });
